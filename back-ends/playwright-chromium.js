@@ -32,6 +32,7 @@ let browser;
 
 exports.initialize = async options => {
 	browser = await playwright.launch(getBrowserOptions(options));
+	return browser;
 };
 
 exports.getPageData = async options => {
