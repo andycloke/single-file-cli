@@ -35,27 +35,29 @@ exports.initialize = async options => {
 	return browser;
 };
 
-exports.getPageData = async options => {
-	let page, context;
+exports.getPageData = async (options, page) => {
 	try {
-		const contextOptions = {
-			bypassCSP: options.browserBypassCSP === undefined || options.browserBypassCSP,
-			ignoreHTTPSErrors: options.browserIgnoreInsecureCerts !== undefined && options.browserIgnoreInsecureCerts
-		};
-		if (options.httpProxyServer) {
-			contextOptions.proxy = {
-				server: options.httpProxyServer
+		if(!page) {
+			let context;
+			const contextOptions = {
+				bypassCSP: options.browserBypassCSP === undefined || options.browserBypassCSP,
+				ignoreHTTPSErrors: options.browserIgnoreInsecureCerts !== undefined && options.browserIgnoreInsecureCerts
 			};
-			if (options.httpProxyUsername) {
-				contextOptions.proxy.username = options.httpProxyUsername;
+			if (options.httpProxyServer) {
+				contextOptions.proxy = {
+					server: options.httpProxyServer
+				};
+				if (options.httpProxyUsername) {
+					contextOptions.proxy.username = options.httpProxyUsername;
+				}
+				if (options.httpProxyPassword) {
+					contextOptions.proxy.password = options.httpProxyPassword;
+				}
 			}
-			if (options.httpProxyPassword) {
-				contextOptions.proxy.password = options.httpProxyPassword;
-			}
+			context = await browser.newContext(contextOptions);
+			await setContextOptions(context, options);
+			page = await context.newPage();
 		}
-		context = await browser.newContext(contextOptions);
-		await setContextOptions(context, options);
-		page = await context.newPage();
 		await setPageOptions(page, options);
 		return await getPageData(page, options);
 	} finally {
