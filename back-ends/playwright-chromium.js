@@ -42,41 +42,46 @@ exports.initialize = async (options) => {
 };
 
 exports.getPageData = async (options, page) => {
-	try {
-		if(!page) {
-			let context;
-			const contextOptions = {
-				bypassCSP: options.browserBypassCSP === undefined || options.browserBypassCSP,
-				ignoreHTTPSErrors: options.browserIgnoreInsecureCerts !== undefined && options.browserIgnoreInsecureCerts
-			};
-			if (options.httpProxyServer) {
-				contextOptions.proxy = {
-					server: options.httpProxyServer
-				};
-				if (options.httpProxyUsername) {
-					contextOptions.proxy.username = options.httpProxyUsername;
-				}
-				if (options.httpProxyPassword) {
-					contextOptions.proxy.password = options.httpProxyPassword;
-				}
-			}
-			context = await browser.newContext(contextOptions);
-			await setContextOptions(context, options);
-			page = await context.newPage();
-		}
-		await setPageOptions(page, options);
-		return await getPageData(page, options);
-	} finally {
-		if (page && !options.browserDebug) {
-			await page.close();
-		}
-	}
+  try {
+    if (!page) {
+      let context;
+      const contextOptions = {
+        bypassCSP: options.browserBypassCSP === undefined || options.browserBypassCSP,
+        ignoreHTTPSErrors: options.browserIgnoreInsecureCerts !== undefined && options.browserIgnoreInsecureCerts
+      };
+      if (options.httpProxyServer) {
+        contextOptions.proxy = {
+          server: options.httpProxyServer,
+        };
+        if (options.httpProxyUsername) {
+          contextOptions.proxy.username = options.httpProxyUsername;
+        }
+        if (options.httpProxyPassword) {
+          contextOptions.proxy.password = options.httpProxyPassword;
+        }
+      }
+      context = await browser.newContext(contextOptions);
+      await setContextOptions(context, options);
+      page = await context.newPage();
+    }
+    await setPageOptions(page, options);
+    return await getPageData(page, options);
+  } finally {
+    if (page && !options.browserDebug) {
+      await page.close();
+    }
+  }
 };
 
+exports.injectScripts = async (options, page) => {
+  const injectedScript = await scripts.get(options);
+  await page.addInitScript(injectedScript);
+}
+
 exports.closeBrowser = () => {
-	if (browser) {
-		return browser.close();
-	}
+  if (browser) {
+    return browser.close();
+  }
 };
 
 function getBrowserOptions(options) {
@@ -115,19 +120,19 @@ async function setPageOptions(page, options) {
 }
 
 async function getPageData(page, options) {
-	const injectedScript = await scripts.get(options);
-	await page.addInitScript(injectedScript);
 	if (options.browserDebug) {
 		await page.waitForTimeout(3000);
 	}
-	await page.goto(options.url, {
-		timeout: options.browserLoadMaxTime || 0,
-		waitUntil: options.browserWaitUntil && options.browserWaitUntil.startsWith("networkidle") ? NETWORK_IDLE_STATE : options.browserWaitUntil || NETWORK_IDLE_STATE
-	});
+	if (options.url) {
+		await page.goto(options.url, {
+			timeout: options.browserLoadMaxTime || 0,
+			waitUntil: options.browserWaitUntil && options.browserWaitUntil.startsWith("networkidle") ? NETWORK_IDLE_STATE : options.browserWaitUntil || NETWORK_IDLE_STATE
+		});
+	}
 	if (options.browserWaitDelay) {
 		await page.waitForTimeout(options.browserWaitDelay);
 	}
-	const pageData = await page.evaluate(async options => await singlefile.getPageData(options), options);
+	const pageData = await page.evaluate(async (options) => await singlefile.getPageData(options), options);
 	if (options.compressContent) {
 		pageData.content = new Uint8Array(pageData.content);
 	}
