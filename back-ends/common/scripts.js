@@ -63,7 +63,8 @@ function initSingleFile() {
 		}
 	});
 }
-function initSingleFileNoCreds() {
+
+function initSingleFileNoCredentials() {
 	singlefile.init({
 		fetch: (url, options) => {
 			return new Promise(function (resolve, reject) {
@@ -118,7 +119,8 @@ exports.get = async options => {
 		scripts += "(" + browserFreezePrototypes.toString() + ")();";
 	}
 	scripts += "if (_singleFileDefine) { define = _singleFileDefine; _singleFileDefine = null }";
-	scripts += "(" + options.xhrWithCredentials === false ? initSingleFileNoCreds.toString() : initSingleFile.toString() + ")();";
+	const initFunction = !!(!options || options.xhrWithCredentials) ? initSingleFile : initSingleFileNoCredentials;
+	scripts += "(" + initFunction.toString() + ")();";
 	return scripts;
 };
 
