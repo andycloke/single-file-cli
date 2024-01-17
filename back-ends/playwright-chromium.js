@@ -30,9 +30,15 @@ const NETWORK_IDLE_STATE = "networkidle";
 
 let browser;
 
-exports.initialize = async options => {
-	browser = await playwright.launch(getBrowserOptions(options));
-	return browser;
+exports.initialize = async (options) => {
+  if (options.browserCDPServer) {
+    browser = await playwright.connectOverCDP(options.browserCDPServer);
+  } else if (options.browserServer) {
+    browser = await playwright.connect(options.browserServer);
+  } else {
+    browser = await playwright.launch(getBrowserOptions(options));
+  }
+  return browser;
 };
 
 exports.getPageData = async (options, page) => {
